@@ -1,11 +1,60 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
-
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+import ModeDropdown from '../components/ModeDropdown.astro';
+import TimerPanel from '../components/TimerPanel.astro';
+import ClockPanel from '../components/ClockPanel.astro';
+import StopwatchPanel from '../components/StopwatchPanel.astro';
+import DurationDialog from '../components/DurationDialog.astro';
+import DisplayFontPicker from '../components/DisplayFontPicker.astro';
 ---
 
 <Layout>
-	<Welcome />
+	<div class="app-shell" id="app-shell">
+		<header class="topbar">
+			<div class="topbar-left">
+				<div class="wordmark">Studytimer4you</div>
+			</div>
+			<div class="topbar-center">
+				<ModeDropdown />
+			</div>
+			<div class="topbar-right">
+				<button class="chip-button" id="focus-toggle" type="button" aria-pressed="false">
+					<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+						<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"></circle>
+						<path d="M12 1v6m0 6v10M1 12h6m6 0h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+					Focus
+				</button>
+			</div>
+		</header>
+
+		<main class="view-panel">
+			<div class="content-view">
+				<div class="stage">
+					<div class="view-section is-visible" data-view="timer">
+						<TimerPanel />
+					</div>
+					<div class="view-section" data-view="clock">
+						<ClockPanel />
+					</div>
+					<div class="view-section" data-view="stopwatch">
+						<StopwatchPanel />
+					</div>
+				</div>
+
+				<div class="display-settings">
+					<DisplayFontPicker />
+				</div>
+			</div>
+		</main>
+	</div>
+
+	<div class="focus-hint" id="focus-hint">Esc to exit · Space to pause</div>
+
+	<DurationDialog />
+	<div class="sr-only" id="status" role="status" aria-live="polite"></div>
+
+	<script>
+		import '../scripts/app';
+	</script>
 </Layout>

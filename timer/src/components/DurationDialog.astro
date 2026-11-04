@@ -1,0 +1,39 @@
+<dialog class="dialog" id="duration-dialog">
+	<div class="dialog-inner">
+		<header class="dialog-header">
+			<div class="dialog-title">Set time</div>
+			<button class="dialog-close" id="duration-close" type="button">Close</button>
+		</header>
+		<div class="dialog-body">
+			<div class="number-row">
+				<label class="number-field">
+					<input id="dur-h" type="number" min="0" max="99" inputmode="numeric" />
+					<span>h</span>
+				</label>
+				<label class="number-field">
+					<input id="dur-m" type="number" min="0" max="59" inputmode="numeric" />
+					<span>m</span>
+				</label>
+				<label class="number-field">
+					<input id="dur-s" type="number" min="0" max="59" inputmode="numeric" />
+					<span>s</span>
+				</label>
+			</div>
+			<div class="preset-row">
+				<button class="preset-chip" data-preset="300">5 min</button>
+				<button class="preset-chip" data-preset="900">15 min</button>
+				<button class="preset-chip" data-preset="1500">25 min</button>
+				<button class="preset-chip" data-preset="2700">45 min</button>
+				<button class="preset-chip" data-preset="3600">60 min</button>
+				<button class="preset-chip" data-preset="5400">90 min</button>
+			</div>
+			<div class="dialog-actions">
+				<button class="button-ghost" id="duration-set" type="button">Set</button>
+				<button class="button button-primary" id="duration-apply" type="button">
+					<span>Set &amp; start</span>
+					<kbd>Enter</kbd>
+				</button>
+			</div>
+		</div>
+	</div>
+</dialog>

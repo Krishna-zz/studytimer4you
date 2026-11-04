@@ -1,0 +1,43 @@
+<div class="mode-dropdown" id="mode-dropdown">
+	<button class="mode-trigger" id="mode-trigger" type="button" aria-haspopup="listbox" aria-expanded="false">
+		<span id="mode-trigger-label">Timer</span>
+		<svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+			<path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+		</svg>
+	</button>
+	<div class="mode-panel" id="mode-panel" role="listbox">
+		<button class="mode-item is-active" data-mode="timer" role="option" aria-selected="true">
+			<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+				<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"></circle>
+				<path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+			</svg>
+			<div class="mode-item-label">
+				<span class="mode-item-title">Timer</span>
+				<span class="mode-item-desc">Countdown to focus</span>
+			</div>
+			<span class="mode-item-kbd">1</span>
+		</button>
+		<button class="mode-item" data-mode="clock" role="option" aria-selected="false">
+			<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+				<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" fill="none"></circle>
+				<path d="M12 6v6l4 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+			</svg>
+			<div class="mode-item-label">
+				<span class="mode-item-title">Clock</span>
+				<span class="mode-item-desc">Time of day</span>
+			</div>
+			<span class="mode-item-kbd">2</span>
+		</button>
+		<button class="mode-item" data-mode="stopwatch" role="option" aria-selected="false">
+			<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+				<circle cx="12" cy="13" r="8" stroke="currentColor" stroke-width="1.6" fill="none"></circle>
+				<path d="M9 2h6M12 2v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+			</svg>
+			<div class="mode-item-label">
+				<span class="mode-item-title">Stopwatch</span>
+				<span class="mode-item-desc">Track elapsed time</span>
+			</div>
+			<span class="mode-item-kbd">3</span>
+		</button>
+	</div>
+</div>
