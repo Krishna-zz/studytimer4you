@@ -1,0 +1,273 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { TICK_VARIANTS } from "../lib/sound";
+---
+
+<Layout>
+	<main class="lab">
+		<a class="lab-back" href="/">← Back to timer</a>
+
+		<header class="lab-head">
+			<div class="eyebrow">SOUND LAB</div>
+			<h1 class="lab-title">Pick your tick</h1>
+			<p class="lab-lede">
+				Every button uses the same quiet tick. Preview each one, then choose the one that feels right.
+			</p>
+		</header>
+
+		<ul class="lab-list">
+			{
+				TICK_VARIANTS.map((variant) => (
+					<li class="lab-row" data-variant={variant.id}>
+						<div class="lab-info">
+							<span class="lab-name">{variant.name}</span>
+							<span class="lab-desc">{variant.description}</span>
+						</div>
+						<div class="lab-actions">
+							<button class="lab-play" type="button" data-play aria-label={`Preview ${variant.name}`}>
+								<svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
+									<path d="M8 5v14l11-7z" fill="currentColor" />
+								</svg>
+								Preview
+							</button>
+							<button class="lab-use" type="button" data-use aria-pressed="false" aria-label={`Use ${variant.name}`}>
+								Use
+							</button>
+						</div>
+					</li>
+				))
+			}
+		</ul>
+
+		<p class="lab-note">Your choice is saved on this device and used for every button.</p>
+		<div class="sr-only" id="lab-status" role="status" aria-live="polite"></div>
+	</main>
+</Layout>
+
+<script>
+	import { TICK_VARIANTS, getTickVariant, isTickVariant, previewTick, setTickVariant } from "../lib/sound";
+	import { load, save } from "../lib/persist";
+
+	type Stored = { tick?: string };
+
+	const stored = load<Stored>();
+	setTickVariant(stored.tick);
+
+	const status = document.getElementById("lab-status");
+	const rows = Array.from(document.querySelectorAll<HTMLElement>("[data-variant]"));
+	const nameFor = (id: string | undefined) =>
+		TICK_VARIANTS.find((variant) => variant.id === id)?.name ?? id ?? "";
+
+	function syncSelection() {
+		const current = getTickVariant();
+		rows.forEach((row) => {
+			const selected = row.dataset.variant === current;
+			row.classList.toggle("is-selected", selected);
+
+			const use = row.querySelector<HTMLButtonElement>("[data-use]");
+			if (use) {
+				use.textContent = selected ? "Selected" : "Use";
+				use.disabled = selected;
+				use.setAttribute("aria-pressed", selected ? "true" : "false");
+				use.setAttribute(
+					"aria-label",
+					selected ? `${nameFor(row.dataset.variant)} selected` : `Use ${nameFor(row.dataset.variant)}`,
+				);
+			}
+		});
+	}
+
+	function announce(message: string) {
+		if (!status) return;
+		status.textContent = "";
+		window.setTimeout(() => {
+			status.textContent = message;
+		}, 30);
+	}
+
+	rows.forEach((row) => {
+		const id = row.dataset.variant;
+		if (!id || !isTickVariant(id)) return;
+
+		row.querySelector<HTMLButtonElement>("[data-play]")?.addEventListener("click", () => {
+			previewTick(id);
+		});
+
+		row.querySelector<HTMLButtonElement>("[data-use]")?.addEventListener("click", () => {
+			setTickVariant(id);
+			save({ tick: id });
+			previewTick(id);
+			syncSelection();
+			const name = TICK_VARIANTS.find((variant) => variant.id === id)?.name ?? id;
+			announce(`${name} selected`);
+		});
+	});
+
+	syncSelection();
+</script>
+
+<style is:global>
+	body {
+		overflow: auto;
+	}
+</style>
+
+<style>
+	.lab {
+		width: min(100%, 52rem);
+		margin: 0 auto;
+		padding: clamp(2rem, 6vh, 4rem) clamp(1.25rem, 6vw, 4rem) 4rem;
+	}
+
+	.lab-back {
+		display: inline-flex;
+		align-items: center;
+		color: var(--muted);
+		text-decoration: none;
+		font-size: 0.66rem;
+		font-weight: 500;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		transition: color 150ms ease;
+	}
+	.lab-back:hover {
+		color: var(--text);
+	}
+
+	.lab-head {
+		margin: 2.8rem 0 2.4rem;
+	}
+	.lab-head .eyebrow {
+		margin-bottom: 0.9rem;
+	}
+	.lab-title {
+		margin: 0;
+		font-size: clamp(2rem, 8vw, 3.4rem);
+		font-weight: 400;
+		letter-spacing: -0.05em;
+		line-height: 0.95;
+	}
+	.lab-lede {
+		max-width: 34rem;
+		margin: 1.1rem 0 0;
+		color: var(--muted);
+		font-size: 0.86rem;
+		line-height: 1.55;
+	}
+
+	.lab-list {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		border-top: 1px solid var(--line);
+	}
+
+	.lab-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.5rem;
+		padding: 1.05rem 0.9rem;
+		border-bottom: 1px solid var(--line);
+		transition: background 180ms ease, padding 180ms ease;
+	}
+	.lab-row.is-selected {
+		padding-left: 1.2rem;
+		background: linear-gradient(90deg, rgba(217, 227, 203, 0.09), transparent 70%);
+	}
+
+	.lab-info {
+		display: flex;
+		flex-direction: column;
+		gap: 0.22rem;
+		min-width: 0;
+	}
+	.lab-name {
+		font-size: 0.92rem;
+	}
+	.lab-row.is-selected .lab-name {
+		color: var(--accent);
+	}
+	.lab-desc {
+		color: var(--muted);
+		font-size: 0.72rem;
+	}
+
+	.lab-actions {
+		display: flex;
+		flex: none;
+		align-items: center;
+		gap: 0.55rem;
+	}
+
+	.lab-play,
+	.lab-use {
+		font-family: inherit;
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		min-height: 2.75rem;
+		border-radius: 4px;
+		cursor: pointer;
+		transition: border-color 150ms ease, background 150ms ease, color 150ms ease, transform 150ms ease;
+	}
+
+	.lab-play {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.48rem 0.7rem;
+		border: 1px solid var(--line-bright);
+		background: transparent;
+		color: #c7c7c1;
+	}
+	.lab-play:hover {
+		border-color: #777770;
+		color: var(--text);
+		transform: translateY(-1px);
+	}
+
+	.lab-use {
+		padding: 0.5rem 0.9rem;
+		border: 1px solid var(--line-bright);
+		background: transparent;
+		color: var(--text);
+	}
+	.lab-use:hover:not(:disabled) {
+		background: var(--surface-raised);
+		transform: translateY(-1px);
+	}
+	.lab-use:disabled {
+		border-color: var(--accent);
+		background: var(--accent);
+		color: var(--accent-ink);
+		cursor: default;
+		opacity: 1;
+	}
+
+	.lab-note {
+		margin: 1.6rem 0 0;
+		color: var(--muted);
+		font-size: 0.68rem;
+	}
+
+	@media (max-width: 520px) {
+		.lab-row {
+			flex-direction: column;
+			align-items: flex-start;
+			gap: 0.9rem;
+			padding: 1rem 0;
+		}
+		.lab-row.is-selected {
+			padding-left: 0.8rem;
+		}
+		.lab-actions {
+			width: 100%;
+		}
+		.lab-play,
+		.lab-use {
+			flex: 1;
+			justify-content: center;
+		}
+	}
+</style>

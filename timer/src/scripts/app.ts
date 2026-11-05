@@ -1,17 +1,34 @@
 import { formatHMS, formatHMSC, splitMs, clampDuration } from "../lib/time";
 import { load, save } from "../lib/persist";
 import { setWakeLock } from "../lib/wakeLock";
+import { playSound, setSoundEnabled, setTickVariant, unlockSound } from "../lib/sound";
 
 type Mode = "timer" | "clock" | "stopwatch";
 type Persisted = {
   mode?: Mode;
   font?: string;
   hour12?: boolean;
+  sound?: boolean;
+  tick?: string;
   timer?: { durationSec: number; remainingMs?: number; running?: boolean; endAt?: number };
   stopwatch?: { elapsedMs: number; running: boolean; startAt?: number };
 };
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+/**
+ * Update a hero display and expose its character count to CSS.
+ * The mobile layout uses --chars to scale each display so it always fits
+ * the viewport, no matter whether the string is "25:00" or "1:00:00.00".
+ */
+function setDisplay(el: HTMLElement, text: string) {
+  if (el.textContent !== text) el.textContent = text;
+  const chars = String(text.length);
+  if (el.dataset.chars !== chars) {
+    el.dataset.chars = chars;
+    el.style.setProperty("--chars", chars);
+  }
+}
 
 const appShell = $<HTMLElement>("app-shell");
 const status = $<HTMLElement>("status");
@@ -50,6 +67,7 @@ const swStartLabel = $<HTMLSpanElement>("sw-start-label");
 const swReset = $<HTMLButtonElement>("sw-reset");
 
 const fontChips = Array.from(document.querySelectorAll<HTMLElement>("[data-font]"));
+const soundToggle = $<HTMLButtonElement>("sound-toggle");
 const focusToggle = $<HTMLButtonElement>("focus-toggle");
 const focusHint = $<HTMLElement>("focus-hint");
 const focusControls = $<HTMLElement>("focus-controls");
@@ -62,7 +80,8 @@ const persisted = load<Persisted>();
 
 let mode: Mode = persisted.mode ?? "timer";
 
-function setMode(next: Mode, options: { focusTrigger?: boolean } = {}) {
+function setMode(next: Mode, options: { focusTrigger?: boolean; playCue?: boolean } = {}) {
+  const changed = mode !== next;
   mode = next;
 
   modeItems.forEach((item) => {
@@ -89,6 +108,7 @@ function setMode(next: Mode, options: { focusTrigger?: boolean } = {}) {
   else renderStopwatch();
   updateWakeLock();
   syncFocusRun();
+  if (changed && options.playCue !== false) playSound("mode");
   if (options.focusTrigger) modeTrigger.focus();
 }
 
@@ -179,10 +199,11 @@ function renderTimer() {
       timerEndAt = 0;
       save({ timer: { durationSec: timerDurationSec, remainingMs: 0, running: false, endAt: 0 } });
       announce("Timer finished");
+      playSound("complete");
     }
   }
 
-  timerDisplay.textContent = formatHMS(timerRemainingMs, false);
+  setDisplay(timerDisplay, formatHMS(timerRemainingMs, false));
 
   if (timerFinished) {
     timerEyebrow.textContent = "TIME'S UP";
@@ -232,16 +253,19 @@ function resetTimer() {
 }
 
 timerStart.addEventListener("click", () => {
-  if (timerRunning) {
+  const wasRunning = timerRunning;
+  if (wasRunning) {
     pauseTimer();
   } else {
     startTimer();
   }
+  playSound(wasRunning ? "pause" : "start");
   renderTimer();
 });
 
 timerReset.addEventListener("click", () => {
   resetTimer();
+  playSound("reset");
   renderTimer();
 });
 
@@ -266,6 +290,7 @@ durationDialog.addEventListener("click", (event) => {
 presetChips.forEach((chip) => {
   chip.addEventListener("click", () => {
     writeDurationIntoDialog(clampDuration(Number(chip.dataset.preset ?? 0)));
+    playSound("preset");
     // Presets are one-tap choices — don't focus the inputs, otherwise mobile
     // browsers open the numeric keypad.
     (document.activeElement as HTMLElement | null)?.blur();
@@ -286,6 +311,7 @@ function applyDuration(startImmediately: boolean) {
   if (startImmediately) startTimer();
   renderTimer();
   durationDialog.close();
+  playSound("apply");
   announce(`Timer set to ${formatHMS(timerDurationSec * 1000, false)}`);
 }
 
@@ -313,7 +339,7 @@ function renderClock() {
 
   const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
 
-  clockDisplay.textContent = `${pick("hour")}:${pick("minute")}`;
+  setDisplay(clockDisplay, `${pick("hour")}:${pick("minute")}`);
   clockSeconds.textContent = `:${pick("second")}`;
   clockEyebrow.textContent = hour12 ? `CLOCK · ${pick("dayPeriod")}` : "CLOCK";
   clockDate.textContent = now.toLocaleDateString(undefined, {
@@ -337,6 +363,7 @@ clockFormatBtns.forEach((button) => {
     save({ hour12 });
     syncClockFormatButtons();
     renderClock();
+    playSound("tick");
     announce(hour12 ? "12-hour clock" : "24-hour clock");
   });
 });
@@ -355,7 +382,7 @@ if (persisted.stopwatch?.running && persisted.stopwatch.startAt) {
 
 function renderStopwatch() {
   if (swRunning) swElapsedMs = Math.max(0, Date.now() - swStartAt);
-  swDisplay.textContent = formatHMSC(swElapsedMs, swElapsedMs >= 3600 * 1000);
+  setDisplay(swDisplay, formatHMSC(swElapsedMs, swElapsedMs >= 3600 * 1000));
   if (swRunning) {
     swStartLabel.textContent = "Pause";
     swStart.classList.add("is-paused");
@@ -368,7 +395,8 @@ function renderStopwatch() {
 }
 
 swStart.addEventListener("click", () => {
-  if (swRunning) {
+  const wasRunning = swRunning;
+  if (wasRunning) {
     swElapsedMs = Math.max(0, Date.now() - swStartAt);
     swRunning = false;
     save({ stopwatch: { elapsedMs: swElapsedMs, running: false, startAt: swStartAt } });
@@ -379,6 +407,7 @@ swStart.addEventListener("click", () => {
     save({ stopwatch: { elapsedMs: swElapsedMs, running: true, startAt: swStartAt } });
     announce("Stopwatch started");
   }
+  playSound(wasRunning ? "pause" : "start");
   renderStopwatch();
 });
 
@@ -387,6 +416,7 @@ swReset.addEventListener("click", () => {
   swElapsedMs = 0;
   swStartAt = 0;
   save({ stopwatch: { elapsedMs: 0, running: false, startAt: 0 } });
+  playSound("reset");
   renderStopwatch();
   announce("Stopwatch reset");
 });
@@ -419,7 +449,10 @@ function applyFont(font: string) {
 fontChips.forEach((chip) => {
   chip.addEventListener("click", () => {
     const font = chip.dataset.font;
-    if (font) applyFont(font);
+    if (!font) return;
+    const changed = !chip.classList.contains("is-selected");
+    applyFont(font);
+    if (changed) playSound("type");
   });
 });
 
@@ -470,6 +503,7 @@ function syncFocusRun() {
 
 async function enterFocus() {
   lastStageTap = 0;
+  playSound("focus-in");
   appShell.classList.add("focus-mode");
   focusToggle.setAttribute("aria-pressed", "true");
   syncFocusRun();
@@ -490,6 +524,7 @@ async function enterFocus() {
 
 async function exitFocus() {
   lastStageTap = 0;
+  playSound("focus-out");
   appShell.classList.remove("focus-mode");
   focusToggle.setAttribute("aria-pressed", "false");
   focusHint.classList.remove("is-visible");
@@ -551,6 +586,27 @@ document.addEventListener("fullscreenchange", () => {
   }
 });
 
+/* ------------------------------------------------------------------ sound */
+
+let soundEnabled = persisted.sound ?? true;
+
+function syncSoundToggle() {
+  setSoundEnabled(soundEnabled);
+  soundToggle.setAttribute("aria-pressed", soundEnabled ? "true" : "false");
+  soundToggle.setAttribute("aria-label", soundEnabled ? "Mute sounds" : "Enable sounds");
+}
+
+soundToggle.addEventListener("click", () => {
+  soundEnabled = !soundEnabled;
+  save({ sound: soundEnabled });
+  syncSoundToggle();
+  if (soundEnabled) playSound("apply");
+});
+
+// Browsers only unlock audio inside a gesture. Do it on the first interaction
+// so a timer restored from storage can still chime when it finishes later.
+document.addEventListener("pointerdown", () => unlockSound(), { once: true, passive: true });
+
 /* --------------------------------------------------------------- keyboard */
 
 document.addEventListener("keydown", (event) => {
@@ -575,7 +631,7 @@ document.addEventListener("keydown", (event) => {
     }
   }
 
-  if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (typing || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
 
   // Never run global shortcuts behind a modal or an open menu.
   if (durationDialog.open || modePanel.classList.contains("is-open")) return;
@@ -617,12 +673,14 @@ function announce(message: string) {
 function boot() {
   applyFont(persisted.font ?? "jetbrains");
   syncClockFormatButtons();
+  setTickVariant(persisted.tick ?? "glass");
+  syncSoundToggle();
 
   const hash = location.hash.replace("#", "");
   const initialMode: Mode =
     hash === "timer" || hash === "clock" || hash === "stopwatch" ? (hash as Mode) : (persisted.mode ?? "timer");
 
-  setMode(initialMode);
+  setMode(initialMode, { playCue: false });
   renderTimer();
   renderClock();
   renderStopwatch();

@@ -18,12 +18,28 @@ import DisplayFontPicker from '../components/DisplayFontPicker.astro';
 				<ModeDropdown />
 			</div>
 			<div class="topbar-right">
-				<button class="chip-button" id="focus-toggle" type="button" aria-pressed="false">
+				<button class="chip-button" id="focus-toggle" type="button" aria-pressed="false" aria-label="Focus mode">
 					<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
 						<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" fill="none"></circle>
 						<path d="M12 1v6m0 6v10M1 12h6m6 0h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
 					</svg>
-					Focus
+					<span class="focus-label">Focus</span>
+				</button>
+				<button
+					class="chip-button sound-toggle"
+					id="sound-toggle"
+					type="button"
+					aria-pressed="true"
+					aria-label="Mute sounds"
+				>
+					<svg class="sound-on-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M4 9.5h3.5L12 6v12L7.5 14.5H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+						<path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.2 6.6a7.8 7.8 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
+					<svg class="sound-off-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+						<path d="M4 9.5h3.5L12 6v12L7.5 14.5H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+						<path d="M16 9.5l4.5 5M20.5 9.5l-4.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"></path>
+					</svg>
 				</button>
 			</div>
 		</header>

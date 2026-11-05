@@ -4,6 +4,8 @@ type State = {
   mode?: "timer" | "clock" | "stopwatch";
   font?: string;
   hour12?: boolean;
+  sound?: boolean;
+  tick?: string;
   timer?: { durationSec: number; remainingMs?: number; running?: boolean; endAt?: number };
   stopwatch?: { elapsedMs: number; running: boolean; startAt?: number };
 };

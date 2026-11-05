@@ -1,8 +1,10 @@
 .app-shell {
+  --page-gutter: clamp(1.25rem, 4vw, 4.5rem);
+
   height: 100svh;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  padding: 0 clamp(1.25rem, 4vw, 4.5rem);
+  padding: 0 var(--page-gutter);
   overflow: hidden;
 }
 
@@ -106,6 +108,19 @@
   white-space: nowrap;
   color: var(--timer);
   user-select: none;
+  /* A barely-there bloom so the numerals feel lit rather than flat. */
+  text-shadow:
+    0 0 0.12em rgba(247, 247, 241, 0.1),
+    0 0 0.7em rgba(247, 247, 241, 0.06);
+  transition: text-shadow 420ms ease, color 420ms ease;
+}
+
+/* While a timer or stopwatch is running, warm the bloom toward the accent. */
+.panel:has(.button-primary.is-paused) .display-hero {
+  color: #fbfbf5;
+  text-shadow:
+    0 0 0.12em rgba(217, 227, 203, 0.22),
+    0 0 0.7em rgba(217, 227, 203, 0.14);
 }
 
 .clock-hero {
@@ -216,6 +231,19 @@
   border-color: #6d6d67;
   background: #10100f;
   transform: translateY(-1px);
+}
+
+.sound-toggle {
+  justify-content: center;
+}
+.sound-toggle .sound-off-icon {
+  display: none;
+}
+.sound-toggle[aria-pressed="false"] .sound-on-icon {
+  display: none;
+}
+.sound-toggle[aria-pressed="false"] .sound-off-icon {
+  display: block;
 }
 
 /* -------------------------------------------------------------- dropdown */
@@ -566,9 +594,49 @@
   .chip-button {
     padding: 0.44rem 0.55rem;
   }
+  /*
+   * Size the numerals from the viewport width and the string length, so the
+   * display always fills the space it is given. 0.58em per character leaves
+   * slack for the widest typeface (SF Pro/Inter) and its tighter tracking.
+   */
   .display-hero {
-    font-size: clamp(2.6rem, 12vw, 6.8rem);
+    --display-fit: calc((100vw - var(--page-gutter) * 2) / var(--chars, 5) / 0.58);
+    font-size: min(var(--display-cap, 7.5rem), var(--display-fit));
   }
+  #timer-display {
+    --chars: 5;
+    --display-cap: 7.5rem;
+  }
+  #stopwatch-display {
+    --chars: 8;
+    --display-cap: 5.4rem;
+  }
+  #clock-display {
+    --chars: 5;
+    --display-cap: 5.4rem;
+  }
+  .clock-seconds {
+    font-size: clamp(1.25rem, 6vw, 2.3rem);
+  }
+
+  /* Focus mode fills the screen, so let it outgrow the regular view. */
+  .focus-mode .display-hero,
+  .focus-mode [data-view="stopwatch"] .display-hero {
+    font-size: min(12rem, calc(100vw / var(--chars, 5) / 0.55));
+  }
+
+  /* Keep the controls comfortably tappable, but let the numerals lead. */
+  .controls {
+    gap: 0.7rem;
+  }
+  .button-primary {
+    min-height: 3.05rem;
+  }
+  .icon-button {
+    width: 3.05rem;
+    height: 3.05rem;
+  }
+
   .display-settings {
     padding: 0.9rem 0 1.1rem;
   }
@@ -585,6 +653,12 @@
   }
   .option-chip-preview {
     font-size: 0.66rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .focus-label {
+    display: none;
   }
 }
 
