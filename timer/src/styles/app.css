@@ -462,15 +462,81 @@
 }
 .focus-mode .stage {
   padding: 0;
+  touch-action: manipulation;
 }
 .focus-mode .display-hero {
-  font-size: clamp(4.2rem, 16vw, 15rem);
+  font-size: clamp(5rem, 26vw, 20rem);
+}
+.focus-mode [data-view="stopwatch"] .display-hero {
+  font-size: clamp(4rem, 18vw, 15rem);
+}
+
+.focus-controls {
+  position: fixed;
+  left: 50%;
+  bottom: max(1.5rem, calc(env(safe-area-inset-bottom, 0px) + 1rem));
+  transform: translateX(-50%);
+  display: none;
+  z-index: 45;
+}
+.focus-mode .focus-controls:not([hidden]) {
+  display: flex;
+}
+.focus-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 3.1rem;
+  padding: 0 1.45rem;
+  border: 1px solid rgba(247, 247, 241, 0.22);
+  border-radius: 999px;
+  background: rgba(12, 12, 11, 0.6);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
+}
+.focus-action:hover {
+  background: rgba(24, 24, 21, 0.75);
+  border-color: rgba(247, 247, 241, 0.35);
+}
+.focus-action:active {
+  transform: scale(0.96);
+}
+.focus-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.focus-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
+}
+.focus-icon-play {
+  display: block;
+}
+.focus-icon-pause {
+  display: none;
+}
+.focus-action.is-running .focus-icon-play {
+  display: none;
+}
+.focus-action.is-running .focus-icon-pause {
+  display: block;
 }
 
 .focus-hint {
   position: fixed;
   left: 50%;
-  bottom: 2.4rem;
+  bottom: 6.4rem;
   transform: translateX(-50%);
   font-size: 0.6rem;
   font-weight: 500;
@@ -537,5 +603,99 @@
   .button-primary {
     min-width: 9.6rem;
     gap: 1.4rem;
+  }
+}
+
+/* ------------------------------------------- landscape (short viewports) */
+
+@media (orientation: landscape) and (max-height: 620px) {
+  .app-shell {
+    padding: 0 clamp(1rem, 3vw, 2.5rem);
+  }
+  .topbar {
+    min-height: 58px;
+    gap: 1rem;
+  }
+  .wordmark {
+    font-size: 0.9rem;
+  }
+
+  /* Put the typeface picker beside the timer instead of under it. */
+  .app-shell:not(.focus-mode) .content-view {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr);
+    gap: clamp(1rem, 4vw, 2.5rem);
+    align-items: stretch;
+  }
+  .app-shell:not(.focus-mode) .stage {
+    grid-column: 1;
+    grid-row: 1;
+    padding: clamp(0.5rem, 2vh, 1.25rem) 0;
+  }
+  .app-shell:not(.focus-mode) .display-settings {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    align-items: center;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding: 0 0 0 clamp(1rem, 3vw, 2.25rem);
+  }
+  .app-shell:not(.focus-mode) .font-picker {
+    width: auto;
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+  .app-shell:not(.focus-mode) .font-row {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+  .app-shell:not(.focus-mode) .option-chip {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.32rem;
+    padding: 0.2rem 0.35rem;
+  }
+
+  .panel {
+    gap: clamp(0.7rem, 2vh, 1.2rem);
+  }
+  .controls {
+    gap: 0.7rem;
+  }
+  .button-primary {
+    min-height: 2.9rem;
+    min-width: 10rem;
+  }
+  .icon-button {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+
+  .focus-controls {
+    bottom: 0.85rem;
+  }
+  .focus-action {
+    min-height: 2.7rem;
+    padding: 0 1.15rem;
+    font-size: 0.66rem;
+  }
+  .focus-hint {
+    bottom: 4.2rem;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 430px) {
+  .topbar {
+    min-height: 52px;
+  }
+  .app-shell:not(.focus-mode) .font-picker > .eyebrow {
+    display: none;
+  }
+  .app-shell:not(.focus-mode) .display-settings {
+    padding-left: clamp(0.75rem, 2vw, 1.5rem);
   }
 }

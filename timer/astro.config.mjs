@@ -6,4 +6,7 @@ export default defineConfig({
 	devToolbar: {
 		enabled: false,
 	},
+	server: {
+		host: true,
+	},
 });

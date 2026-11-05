@@ -1,5 +1,14 @@
 /* Fonts are loaded in Layout.astro so the browser can preconnect early. */
 
+/* Self-hosted IBM Plex Mono with a plain (dotless) zero, keeping mono spacing. */
+@font-face {
+  font-family: "IBM Plex Mono Dotless";
+  src: url("/fonts/ibm-plex-mono-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
 
@@ -59,15 +68,11 @@ a:focus-visible {
   font-family: "Space Mono", monospace;
 }
 .font-ibm-plex {
-  font-family: "IBM Plex Mono", monospace;
+  font-family: "IBM Plex Mono Dotless", monospace;
 }
 .font-manrope {
   font-family: Manrope, sans-serif;
   letter-spacing: -0.12em;
-}
-.font-syne {
-  font-family: Syne, sans-serif;
-  letter-spacing: -0.13em;
 }
 .font-sf-pro {
   font-family: "SF Pro Display", "SF Pro Text", Inter, -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", system-ui, sans-serif;

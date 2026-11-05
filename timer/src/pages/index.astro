@@ -47,9 +47,22 @@ import DisplayFontPicker from '../components/DisplayFontPicker.astro';
 				</div>
 			</div>
 		</main>
-	</div>
 
-	<div class="focus-hint" id="focus-hint">Esc to exit · Space to pause</div>
+		<div class="focus-controls" id="focus-controls" hidden>
+			<button class="focus-action" id="focus-run" type="button" aria-label="Pause timer">
+				<svg class="focus-icon focus-icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+					<rect x="6" y="4" width="4" height="16" rx="1" fill="currentColor"></rect>
+					<rect x="14" y="4" width="4" height="16" rx="1" fill="currentColor"></rect>
+				</svg>
+				<svg class="focus-icon focus-icon-play" viewBox="0 0 24 24" aria-hidden="true">
+					<path d="M7 4.5v15l13-7.5z" fill="currentColor"></path>
+				</svg>
+				<span id="focus-run-label">Pause</span>
+			</button>
+		</div>
+
+		<div class="focus-hint" id="focus-hint">Esc to exit · Space to pause</div>
+	</div>
 
 	<DurationDialog />
 	<div class="sr-only" id="status" role="status" aria-live="polite"></div>

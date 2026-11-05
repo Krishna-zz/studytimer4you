@@ -1,5 +1,6 @@
 import { formatHMS, formatHMSC, splitMs, clampDuration } from "../lib/time";
 import { load, save } from "../lib/persist";
+import { setWakeLock } from "../lib/wakeLock";
 
 type Mode = "timer" | "clock" | "stopwatch";
 type Persisted = {
@@ -51,6 +52,9 @@ const swReset = $<HTMLButtonElement>("sw-reset");
 const fontChips = Array.from(document.querySelectorAll<HTMLElement>("[data-font]"));
 const focusToggle = $<HTMLButtonElement>("focus-toggle");
 const focusHint = $<HTMLElement>("focus-hint");
+const focusControls = $<HTMLElement>("focus-controls");
+const focusRun = $<HTMLButtonElement>("focus-run");
+const focusRunLabel = $<HTMLSpanElement>("focus-run-label");
 
 const persisted = load<Persisted>();
 
@@ -83,6 +87,8 @@ function setMode(next: Mode, options: { focusTrigger?: boolean } = {}) {
   if (next === "timer") renderTimer();
   else if (next === "clock") renderClock();
   else renderStopwatch();
+  updateWakeLock();
+  syncFocusRun();
   if (options.focusTrigger) modeTrigger.focus();
 }
 
@@ -193,6 +199,8 @@ function renderTimer() {
   }
 
   updateDocumentTitle();
+  updateWakeLock();
+  syncFocusRun();
 }
 
 function startTimer() {
@@ -258,7 +266,9 @@ durationDialog.addEventListener("click", (event) => {
 presetChips.forEach((chip) => {
   chip.addEventListener("click", () => {
     writeDurationIntoDialog(clampDuration(Number(chip.dataset.preset ?? 0)));
-    durH.focus();
+    // Presets are one-tap choices — don't focus the inputs, otherwise mobile
+    // browsers open the numeric keypad.
+    (document.activeElement as HTMLElement | null)?.blur();
   });
 });
 
@@ -353,6 +363,8 @@ function renderStopwatch() {
     swStartLabel.textContent = swElapsedMs > 0 ? "Resume" : "Start";
     swStart.classList.remove("is-paused");
   }
+  updateWakeLock();
+  syncFocusRun();
 }
 
 swStart.addEventListener("click", () => {
@@ -381,7 +393,14 @@ swReset.addEventListener("click", () => {
 
 /* ----------------------------------------------------------- type + title */
 
-const FONTS = ["jetbrains", "dm-mono", "ibm-plex", "space-mono", "syne", "manrope", "sf-pro"];
+function updateWakeLock() {
+  const active =
+    (mode === "timer" && timerRunning) ||
+    (mode === "stopwatch" && swRunning);
+  setWakeLock(active);
+}
+
+const FONTS = ["jetbrains", "dm-mono", "ibm-plex", "space-mono", "manrope", "sf-pro"];
 
 function applyFont(font: string) {
   const chosen = FONTS.includes(font) ? font : "jetbrains";
@@ -416,12 +435,48 @@ function updateDocumentTitle() {
 
 /* ------------------------------------------------------------- focus mode */
 
+let lastFocusRunState = "";
+
+/**
+ * Focus mode hides the regular controls, so show a single tap target that
+ * pauses/resumes the timer or stopwatch without leaving focus mode.
+ */
+function syncFocusRun() {
+  if (mode === "clock") {
+    focusControls.hidden = true;
+    return;
+  }
+  focusControls.hidden = false;
+
+  let label: string;
+  if (mode === "timer") {
+    if (timerRunning) label = "Pause";
+    else if (timerFinished) label = "Restart";
+    else if (timerRemainingMs < timerDurationSec * 1000) label = "Resume";
+    else label = "Start";
+  } else {
+    label = swRunning ? "Pause" : swElapsedMs > 0 ? "Resume" : "Start";
+  }
+
+  const running = mode === "timer" ? timerRunning : swRunning;
+  const state = `${mode}:${running}:${label}`;
+  if (state === lastFocusRunState) return;
+  lastFocusRunState = state;
+
+  focusRunLabel.textContent = label;
+  focusRun.classList.toggle("is-running", running);
+  focusRun.setAttribute("aria-label", `${label} ${mode}`);
+}
+
 async function enterFocus() {
+  lastStageTap = 0;
   appShell.classList.add("focus-mode");
   focusToggle.setAttribute("aria-pressed", "true");
+  syncFocusRun();
   const coarse = window.matchMedia("(pointer: coarse)").matches;
-  const exitHint = coarse ? "Tap to exit" : "Esc to exit";
-  focusHint.textContent = mode === "clock" ? exitHint : `${exitHint} · Space to pause`;
+  const exitHint = coarse ? "Double-tap to exit" : "Esc to exit";
+  const pauseHint = coarse ? "Tap Pause to stop" : "Space to pause";
+  focusHint.textContent = mode === "clock" ? exitHint : `${exitHint} · ${pauseHint}`;
   showFocusHint();
   if (!document.fullscreenElement) {
     try {
@@ -434,6 +489,7 @@ async function enterFocus() {
 }
 
 async function exitFocus() {
+  lastStageTap = 0;
   appShell.classList.remove("focus-mode");
   focusToggle.setAttribute("aria-pressed", "false");
   focusHint.classList.remove("is-visible");
@@ -447,6 +503,9 @@ async function exitFocus() {
 }
 
 let focusHintTimer = 0;
+const STAGE_DOUBLE_TAP_MS = 420;
+let lastStageTap = 0;
+
 function showFocusHint() {
   focusHint.classList.add("is-visible");
   window.clearTimeout(focusHintTimer);
@@ -457,16 +516,32 @@ document.addEventListener("pointermove", () => {
   if (appShell.classList.contains("focus-mode")) showFocusHint();
 });
 
-// Touch devices have no Escape key — a tap on the stage leaves focus mode.
-document.querySelector(".stage")?.addEventListener("click", (event) => {
+// Touch devices have no Escape key — a double tap on the stage leaves focus mode.
+document.querySelector<HTMLElement>(".stage")?.addEventListener("click", (event) => {
   if (!appShell.classList.contains("focus-mode")) return;
   event.preventDefault();
-  exitFocus();
+  const now = performance.now();
+  if (now - lastStageTap <= STAGE_DOUBLE_TAP_MS) {
+    lastStageTap = 0;
+    void exitFocus();
+  } else {
+    lastStageTap = now;
+    showFocusHint();
+  }
 });
 
 focusToggle.addEventListener("click", () => {
   if (appShell.classList.contains("focus-mode")) exitFocus();
   else enterFocus();
+});
+
+focusRun.addEventListener("click", (event) => {
+  // Keep the tap away from the stage double-tap-to-exit handler.
+  event.stopPropagation();
+  lastStageTap = 0;
+  if (mode === "timer") timerStart.click();
+  else if (mode === "stopwatch") swStart.click();
+  syncFocusRun();
 });
 
 document.addEventListener("fullscreenchange", () => {
